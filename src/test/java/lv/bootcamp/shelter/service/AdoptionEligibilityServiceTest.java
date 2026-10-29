@@ -92,6 +92,7 @@ class AdoptionEligibilityServiceTest {
 
         assertThat(result.approved()).isFalse();
         assertThat(result.reason()).isEqualTo(RejectionReasons.UNDERAGE);
+        verify(auditLogger).logRejection(1L, 1L, RejectionReason.UNDERAGE);
         verifyNoInteractions(notificationClient);
     }
 
@@ -270,6 +271,27 @@ class AdoptionEligibilityServiceTest {
         unknownAgeAnimal.setAge(null);
 
         assertThat(adoptionEligibilityService.calculatePriorityScore(validAdopter(), unknownAgeAnimal))
+                .isEqualTo(0);
+    }
+
+    @Test
+    void calculatePriorityScore_shouldNotAddExtraBonus_whenThreePreviousAdoptions() {
+        Adopter adopter = validAdopter();
+        adopter.setCurrentPetCount(0);
+        adopter.setPreviousAdoptions(3);
+
+        assertThat(adoptionEligibilityService.calculatePriorityScore(adopter, animal()))
+                .isEqualTo(10);
+    }
+
+    @Test
+    void calculatePriorityScore_shouldNotAddSeniorBonus_whenAnimalIs7() {
+        Adopter adopter = validAdopter();
+        adopter.setCurrentPetCount(0);
+        Animal animal = animal();
+        animal.setAge(7);
+
+        assertThat(adoptionEligibilityService.calculatePriorityScore(adopter, animal))
                 .isEqualTo(0);
     }
 
